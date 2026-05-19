@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Cryptolerts</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+body{background:var(--bg)}
+.admin-layout{display:grid;grid-template-columns:220px 1fr;min-height:100vh;padding-top:0}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:24px 0;position:fixed;top:0;left:0;bottom:0;width:220px;z-index:50;display:flex;flex-direction:column}
+.sidebar-logo{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;padding:20px 20px 24px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.sidebar-logo span{color:var(--gold)}
+.sidebar-logo small{display:block;font-size:11px;color:var(--text3);font-family:'DM Sans',sans-serif;font-weight:400;margin-top:2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:var(--text2);cursor:pointer;transition:all .15s;border:none;background:transparent;width:100%;text-align:left;border-radius:0}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.nav-item.on{color:var(--gold);background:var(--gold-dim)}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border)}
+.sidebar-footer a{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:6px;text-decoration:none;transition:color .2s}
+.sidebar-footer a:hover{color:var(--text)}
+.main-area{margin-left:220px;padding:32px 40px;min-height:100vh}
+.page-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:700;margin-bottom:6px}
+.page-sub{font-size:14px;color:var(--text2);margin-bottom:32px}
+/* TABS */
+.panel{display:none}.panel.on{display:block}
+/* SIGNAL MANAGER */
+.sig-manager-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.sig-list{display:flex;flex-direction:column;gap:10px}
+.sig-row{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px}
+.sig-row-left{flex:1;display:flex;align-items:center;gap:12px}
+.sig-row-pair{font-family:'Syne',sans-serif;font-size:15px;font-weight:600}
+.sig-row-meta{font-size:12px;color:var(--text2)}
+.sig-row-actions{display:flex;gap:8px;flex-shrink:0}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status-active{background:var(--green)}
+.status-closed{background:var(--text3)}
+/* MODAL */
+.modal-backdrop{position:fixed;inset:0;z-index:500;background:rgba(8,10,14,.88);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-backdrop.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:18px;padding:32px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;transform:translateY(16px);transition:transform .2s}
+.modal-backdrop.open .modal{transform:translateY(0)}
+.modal-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:24px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* STATS EDITOR */
+.stats-form{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:28px;max-width:500px}
+/* TRADES */
+.trade-list{display:flex;flex-direction:column;gap:10px}
+.trade-row{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px}
+.trade-row-left{flex:1}
+.trade-pair{font-weight:600;font-size:14px}
+.trade-meta{font-size:12px;color:var(--text2);margin-top:2px}
+/* ARTICLES */
+.art-list{display:flex;flex-direction:column;gap:10px}
+.art-row{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px}
+.art-row-left{flex:1}
+.art-row-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px}
+.art-row-meta{font-size:12px;color:var(--text2)}
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 20px;font-size:14px;color:var(--text);display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:all .3s ease;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:rgba(61,214,140,.3)}
+/* DASHBOARD */
+.dash-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px}
+.dash-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px}
+.dash-card-n{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;color:var(--gold)}
+.dash-card-l{font-size:12px;color:var(--text3);margin-top:4px}
+.quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qa-btn{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all .2s;text-align:left;display:flex;align-items:center;gap:14px}
+.qa-btn:hover{border-color:var(--gold);background:var(--gold-dim)}
+.qa-icon{font-size:24px}
+.qa-title{font-size:14px;font-weight:500;color:var(--text)}
+.qa-sub{font-size:12px;color:var(--text2);margin-top:2px}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .main-area{margin-left:0;padding:20px}
+  .dash-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="sidebar-logo">crypto<span>lerts</span><small>Admin Panel</small></div>
+  <button class="nav-item on" onclick="switchPanel('dashboard',this)"><span class="icon">📊</span>Dashboard</button>
+  <button class="nav-item" onclick="switchPanel('signals',this)"><span class="icon">⚡</span>Signals</button>
+  <button class="nav-item" onclick="switchPanel('trades',this)"><span class="icon">📈</span>Trade History</button>
+  <button class="nav-item" onclick="switchPanel('articles',this)"><span class="icon">📚</span>Articles</button>
+  <button class="nav-item" onclick="switchPanel('stats',this)"><span class="icon">🎯</span>Stats & Members</button>
+  <div class="sidebar-footer">
+    <a href="index.html" target="_blank">↗ View live site</a>
+  </div>
+</div>
+
+<div class="main-area">
+
+  <!-- DASHBOARD -->
+  <div class="panel on" id="panel-dashboard">
+    <div class="page-title">Dashboard</div>
+    <div class="page-sub">Overview of your Cryptolerts platform</div>
+    <div class="dash-grid" id="dash-grid"></div>
+    <h3 style="font-family:'Syne',sans-serif;font-size:17px;font-weight:600;margin-bottom:16px">Quick actions</h3>
+    <div class="quick-actions">
+      <button class="qa-btn" onclick="switchPanel('signals',document.querySelector('[onclick*=signals]'))">
+        <div class="qa-icon">⚡</div><div><div class="qa-title">Post new signal</div><div class="qa-sub">Add a trade setup to the live site</div></div>
+      </button>
+      <button class="qa-btn" onclick="switchPanel('trades',document.querySelector('[onclick*=trades]'))">
+        <div class="qa-icon">📈</div><div><div class="qa-title">Log trade result</div><div class="qa-sub">Update win/loss history</div></div>
+      </button>
+      <button class="qa-btn" onclick="switchPanel('articles',document.querySelector('[onclick*=articles]'))">
+        <div class="qa-icon">📚</div><div><div class="qa-title">Write article</div><div class="qa-sub">Publish education content</div></div>
+      </button>
+      <button class="qa-btn" onclick="switchPanel('stats',document.querySelector('[onclick*=stats]'))">
+        <div class="qa-icon">🎯</div><div><div class="qa-title">Update stats</div><div class="qa-sub">Edit win rate and member count</div></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- SIGNALS -->
+  <div class="panel" id="panel-signals">
+    <div class="sig-manager-header">
+      <div><div class="page-title">Signals</div><div class="page-sub">Manage live trade setups shown on the site</div></div>
+      <button class="btn-primary" onclick="openSigModal()">+ New signal</button>
+    </div>
+    <div class="sig-list" id="sig-list"></div>
+  </div>
+
+  <!-- TRADES -->
+  <div class="panel" id="panel-trades">
+    <div class="sig-manager-header">
+      <div><div class="page-title">Trade History</div><div class="page-sub">Log closed trades for the Results page</div></div>
+      <button class="btn-primary" onclick="openTradeModal()">+ Log trade</button>
+    </div>
+    <div class="trade-list" id="trade-list"></div>
+  </div>
+
+  <!-- ARTICLES -->
+  <div class="panel" id="panel-articles">
+    <div class="sig-manager-header">
+      <div><div class="page-title">Articles</div><div class="page-sub">Write and publish education content</div></div>
+      <button class="btn-primary" onclick="openArticleModal()">+ New article</button>
+    </div>
+    <div class="art-list" id="art-list"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="panel" id="panel-stats">
+    <div class="page-title">Stats & Members</div>
+    <div class="page-sub">These numbers appear on the homepage and results page</div>
+    <div class="stats-form" id="stats-form"></div>
+  </div>
+
+</div>
+
+<!-- SIGNAL MODAL -->
+<div class="modal-backdrop" id="sig-modal">
+  <div class="modal">
+    <div class="modal-title" id="sig-modal-title">New signal</div>
+    <div class="form-row">
+      <div class="form-group"><label>Pair</label><input id="f-pair" placeholder="BTC/USDT"></div>
+      <div class="form-group"><label>Coin symbol</label><input id="f-coin" placeholder="BTC"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Direction</label><select id="f-dir"><option value="long">Long ▲</option><option value="short">Short ▼</option></select></div>
+      <div class="form-group"><label>Type</label><select id="f-type"><option>Swing</option><option>Scalp</option><option>Day trade</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Timeframe</label><select id="f-tf"><option>1H</option><option>4H</option><option>1D</option><option>15M</option><option>1W</option></select></div>
+      <div class="form-group"><label>Probability % (1–99)</label><input id="f-prob" type="number" min="1" max="99" placeholder="82"></div>
+    </div>
+    <div class="form-group"><label>Strategy / confluence notes</label><input id="f-strategy" placeholder="e.g. Order block + RSI divergence"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Entry price</label><input id="f-entry" placeholder="$101,800"></div>
+      <div class="form-group"><label>Take profit</label><input id="f-tp" placeholder="$107,400"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Stop loss</label><input id="f-sl" placeholder="$99,200"></div>
+      <div class="form-group"><label>Visibility</label><select id="f-locked"><option value="false">Free (public)</option><option value="true">Pro only (locked)</option></select></div>
+    </div>
+    <div class="form-group"><label>Status</label><select id="f-status"><option value="active">Active</option><option value="closed">Closed / expired</option></select></div>
+    <input type="hidden" id="f-sig-id">
+    <div class="modal-footer">
+      <button class="btn-sm outline" onclick="closeSigModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveSig()">Save signal</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRADE MODAL -->
+<div class="modal-backdrop" id="trade-modal">
+  <div class="modal">
+    <div class="modal-title" id="trade-modal-title">Log trade result</div>
+    <div class="form-row">
+      <div class="form-group"><label>Pair</label><input id="t-pair" placeholder="BTC/USDT"></div>
+      <div class="form-group"><label>Direction</label><select id="t-dir"><option value="long">Long ▲</option><option value="short">Short ▼</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Entry price</label><input id="t-entry" placeholder="$101,800"></div>
+      <div class="form-group"><label>Exit price</label><input id="t-exit" placeholder="$107,400"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Return %</label><input id="t-pct" placeholder="+5.4%"></div>
+      <div class="form-group"><label>Result</label><select id="t-result"><option value="win">Win ✓</option><option value="loss">Loss ✗</option></select></div>
+    </div>
+    <div class="form-group"><label>Date</label><input id="t-date" type="date"></div>
+    <input type="hidden" id="t-id">
+    <div class="modal-footer">
+      <button class="btn-sm outline" onclick="closeTradeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveTrade()">Save trade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARTICLE MODAL -->
+<div class="modal-backdrop" id="art-modal">
+  <div class="modal">
+    <div class="modal-title">Write article</div>
+    <div class="form-group"><label>Title</label><input id="a-title" placeholder="How to read order blocks…"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Category</label>
+        <select id="a-cat">
+          <option>Technical Analysis</option>
+          <option>On-Chain</option>
+          <option>Risk Management</option>
+          <option>Psychology</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Level</label>
+        <select id="a-level"><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Read time (e.g. "8 min")</label><input id="a-time" placeholder="8 min"></div>
+      <div class="form-group"><label>Publish</label><select id="a-pub"><option value="true">Published</option><option value="false">Draft</option></select></div>
+    </div>
+    <div class="form-group"><label>Body (use double line breaks for paragraphs)</label><textarea id="a-body" style="min-height:200px" placeholder="Write the full article here…"></textarea></div>
+    <input type="hidden" id="a-id">
+    <div class="modal-footer">
+      <button class="btn-sm outline" onclick="closeArtModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveArticle()">Save article</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="shared.js"></script>
+<script>
+// ── PANEL SWITCH ─────────────────────────────────────────────────────────
+function switchPanel(id, btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('on'));
+  document.getElementById('panel-'+id).classList.add('on');
+  if(btn) btn.classList.add('on');
+  if(id==='dashboard') buildDashboard();
+  if(id==='signals')   buildSigList();
+  if(id==='trades')    buildTradeList();
+  if(id==='articles')  buildArtList();
+  if(id==='stats')     buildStatsForm();
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = (type==='ok'?'✓ ':'⚠ ') + msg;
+  t.className = 'toast show ' + type;
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────
+function buildDashboard() {
+  const st = loadStats();
+  const sigs = loadSignals();
+  const trades = loadTrades();
+  const arts = loadArticles();
+  document.getElementById('dash-grid').innerHTML = [
+    {n:sigs.filter(s=>s.status==='active').length, l:'Active signals'},
+    {n:st.winRate+'%', l:'Win rate (30d)'},
+    {n:st.members, l:'Community members'},
+    {n:arts.filter(a=>a.published).length, l:'Published articles'},
+  ].map(d=>`<div class="dash-card"><div class="dash-card-n">${d.n}</div><div class="dash-card-l">${d.l}</div></div>`).join('');
+}
+
+// ── SIGNALS ──────────────────────────────────────────────────────────────
+function buildSigList() {
+  const sigs = loadSignals();
+  document.getElementById('sig-list').innerHTML = sigs.length ? sigs.map(s=>`
+    <div class="sig-row">
+      <div class="status-dot ${s.status==='active'?'status-active':'status-closed'}"></div>
+      <div class="sig-row-left">
+        <div class="coin-badge-lg" style="${coinStyle(s.coin)};width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;font-size:11px">${s.coin}</div>
+        <div>
+          <div class="sig-row-pair">${s.pair} <span class="badge ${s.dir}" style="font-size:10px">${s.dir==='long'?'▲ Long':'▼ Short'}</span> ${s.locked?'<span class="badge" style="background:rgba(255,255,255,.06);color:var(--text3)">🔒 Pro</span>':''}</div>
+          <div class="sig-row-meta">${s.type} · ${s.tf} · ${s.strategy} · <span style="font-family:monospace">${s.prob}%</span> prob · Entry ${s.entry}</div>
+        </div>
+      </div>
+      <div class="sig-row-actions">
+        <button class="btn-sm outline" onclick="editSig(${s.id})">Edit</button>
+        <button class="btn-sm danger" onclick="deleteSig(${s.id})">Delete</button>
+      </div>
+    </div>`).join('') : '<div class="empty-state"><div class="icon">⚡</div>No signals yet. Add your first one.</div>';
+}
+
+let editingSigId = null;
+function openSigModal(id=null) {
+  editingSigId = id;
+  document.getElementById('sig-modal-title').textContent = id ? 'Edit signal' : 'New signal';
+  if (id) {
+    const s = loadSignals().find(x=>x.id===id);
+    if (!s) return;
+    document.getElementById('f-pair').value = s.pair;
+    document.getElementById('f-coin').value = s.coin;
+    document.getElementById('f-dir').value = s.dir;
+    document.getElementById('f-type').value = s.type;
+    document.getElementById('f-tf').value = s.tf;
+    document.getElementById('f-prob').value = s.prob;
+    document.getElementById('f-strategy').value = s.strategy;
+    document.getElementById('f-entry').value = s.entry;
+    document.getElementById('f-tp').value = s.tp;
+    document.getElementById('f-sl').value = s.sl;
+    document.getElementById('f-locked').value = s.locked ? 'true' : 'false';
+    document.getElementById('f-status').value = s.status;
+  } else {
+    ['f-pair','f-coin','f-prob','f-strategy','f-entry','f-tp','f-sl'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-dir').value='long';
+    document.getElementById('f-type').value='Swing';
+    document.getElementById('f-tf').value='4H';
+    document.getElementById('f-locked').value='false';
+    document.getElementById('f-status').value='active';
+  }
+  document.getElementById('sig-modal').classList.add('open');
+}
+function closeSigModal() { document.getElementById('sig-modal').classList.remove('open'); }
+function editSig(id) { openSigModal(id); }
+function deleteSig(id) {
+  if (!confirm('Delete this signal?')) return;
+  const sigs = loadSignals().filter(s=>s.id!==id);
+  saveSignals(sigs);
+  buildSigList();
+  showToast('Signal deleted');
+}
+function saveSig() {
+  const pair = document.getElementById('f-pair').value.trim();
+  const coin = document.getElementById('f-coin').value.trim().toUpperCase();
+  if (!pair || !coin) { showToast('Pair and coin are required','err'); return; }
+  const sig = {
+    id: editingSigId || Date.now(),
+    pair, coin,
+    dir: document.getElementById('f-dir').value,
+    type: document.getElementById('f-type').value,
+    tf: document.getElementById('f-tf').value,
+    prob: parseInt(document.getElementById('f-prob').value)||80,
+    strategy: document.getElementById('f-strategy').value.trim(),
+    entry: document.getElementById('f-entry').value.trim(),
+    tp: document.getElementById('f-tp').value.trim(),
+    sl: document.getElementById('f-sl').value.trim(),
+    locked: document.getElementById('f-locked').value==='true',
+    status: document.getElementById('f-status').value,
+    date: new Date().toISOString(),
+  };
+  const sigs = loadSignals();
+  if (editingSigId) {
+    const idx = sigs.findIndex(s=>s.id===editingSigId);
+    if (idx>-1) sigs[idx] = sig;
+  } else {
+    sigs.unshift(sig);
+  }
+  saveSignals(sigs);
+  closeSigModal();
+  buildSigList();
+  showToast(editingSigId ? 'Signal updated' : 'Signal posted to site');
+}
+
+// ── TRADES ────────────────────────────────────────────────────────────────
+function buildTradeList() {
+  const trades = loadTrades();
+  document.getElementById('trade-list').innerHTML = trades.length ? trades.map(t=>`
+    <div class="trade-row">
+      <div class="coin-ic" style="${coinStyle(t.pair.split('/')[0])}">${t.pair.split('/')[0]}</div>
+      <div class="trade-row-left">
+        <div class="trade-pair">${t.pair} <span class="badge ${t.dir}">${t.dir==='long'?'▲ Long':'▼ Short'}</span> <span class="badge ${t.result==='win'?'rm':'ps'}">${t.result==='win'?'✓ Win':'✗ Loss'}</span></div>
+        <div class="trade-meta">Entry ${t.entry} → Exit ${t.exit} · <strong style="color:${t.result==='win'?'var(--green)':'var(--red)'}">${t.pct}</strong> · ${t.date}</div>
+      </div>
+      <button class="btn-sm danger" onclick="deleteTrade(${t.id})">Delete</button>
+    </div>`).join('') : '<div class="empty-state"><div class="icon">📈</div>No trades logged yet.</div>';
+}
+function openTradeModal() {
+  document.getElementById('t-id').value='';
+  ['t-pair','t-entry','t-exit','t-pct'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('t-result').value='win';
+  document.getElementById('t-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('trade-modal').classList.add('open');
+}
+function closeTradeModal() { document.getElementById('trade-modal').classList.remove('open'); }
+function deleteTrade(id) {
+  if (!confirm('Delete this trade?')) return;
+  saveTrades(loadTrades().filter(t=>t.id!==id));
+  buildTradeList(); showToast('Trade deleted');
+}
+function saveTrade() {
+  const pair = document.getElementById('t-pair').value.trim();
+  if (!pair) { showToast('Pair is required','err'); return; }
+  const trade = {
+    id: Date.now(), pair,
+    dir: document.getElementById('t-dir').value,
+    entry: document.getElementById('t-entry').value.trim(),
+    exit: document.getElementById('t-exit').value.trim(),
+    pct: document.getElementById('t-pct').value.trim(),
+    result: document.getElementById('t-result').value,
+    date: document.getElementById('t-date').value,
+  };
+  const trades = loadTrades();
+  trades.unshift(trade);
+  saveTrades(trades);
+  closeTradeModal();
+  buildTradeList();
+  showToast('Trade logged');
+}
+
+// ── ARTICLES ─────────────────────────────────────────────────────────────
+const catClsMap = {'Technical Analysis':'cat-ta','On-Chain':'cat-on','Risk Management':'cat-rm','Psychology':'cat-ps'};
+function buildArtList() {
+  const arts = loadArticles();
+  document.getElementById('art-list').innerHTML = arts.length ? arts.map(a=>`
+    <div class="art-row">
+      <span class="badge ${catClsMap[a.cat]||'ta'}" style="flex-shrink:0">${a.cat}</span>
+      <div class="art-row-left">
+        <div class="art-row-title">${a.title}</div>
+        <div class="art-row-meta">${a.readTime} · ${a.level} · ${a.published?'<span style="color:var(--green)">Published</span>':'<span style="color:var(--text3)">Draft</span>'}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn-sm outline" onclick="editArticle(${a.id})">Edit</button>
+        <button class="btn-sm danger" onclick="deleteArticle(${a.id})">Delete</button>
+      </div>
+    </div>`).join('') : '<div class="empty-state"><div class="icon">📚</div>No articles yet.</div>';
+}
+function openArticleModal(a=null) {
+  if (a) {
+    document.getElementById('a-id').value=a.id;
+    document.getElementById('a-title').value=a.title;
+    document.getElementById('a-cat').value=a.cat;
+    document.getElementById('a-level').value=a.level;
+    document.getElementById('a-time').value=a.readTime;
+    document.getElementById('a-pub').value=a.published?'true':'false';
+    document.getElementById('a-body').value=a.body;
+  } else {
+    document.getElementById('a-id').value='';
+    ['a-title','a-body','a-time'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('a-cat').value='Technical Analysis';
+    document.getElementById('a-level').value='Intermediate';
+    document.getElementById('a-pub').value='true';
+  }
+  document.getElementById('art-modal').classList.add('open');
+}
+function closeArtModal() { document.getElementById('art-modal').classList.remove('open'); }
+function editArticle(id) { const a = loadArticles().find(x=>x.id===id); if(a) openArticleModal(a); }
+function deleteArticle(id) {
+  if (!confirm('Delete this article?')) return;
+  saveArticles(loadArticles().filter(a=>a.id!==id));
+  buildArtList(); showToast('Article deleted');
+}
+function saveArticle() {
+  const title = document.getElementById('a-title').value.trim();
+  const body = document.getElementById('a-body').value.trim();
+  if (!title||!body) { showToast('Title and body are required','err'); return; }
+  const editId = parseInt(document.getElementById('a-id').value);
+  const cat = document.getElementById('a-cat').value;
+  const art = {
+    id: editId || Date.now(),
+    cat, title, body,
+    catCls: catClsMap[cat]||'cat-ta',
+    level: document.getElementById('a-level').value,
+    readTime: document.getElementById('a-time').value.trim()||'5 min',
+    published: document.getElementById('a-pub').value==='true',
+    date: new Date().toISOString(),
+  };
+  const arts = loadArticles();
+  if (editId) { const idx=arts.findIndex(a=>a.id===editId); if(idx>-1) arts[idx]=art; }
+  else arts.unshift(art);
+  saveArticles(arts);
+  closeArtModal();
+  buildArtList();
+  showToast(editId?'Article updated':'Article published');
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────
+function buildStatsForm() {
+  const st = loadStats();
+  document.getElementById('stats-form').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Win rate % (number only)</label><input id="st-wr" value="${st.winRate}" type="number" min="0" max="100"></div>
+      <div class="form-group"><label>Members (display text)</label><input id="st-members" value="${st.members}" placeholder="4,800+"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Total signals (30d)</label><input id="st-total" value="${st.total}" type="number"></div>
+      <div class="form-group"><label>Wins</label><input id="st-wins" value="${st.wins}" type="number"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Losses</label><input id="st-losses" value="${st.losses}" type="number"></div>
+      <div class="form-group"><label>Avg hold time</label><input id="st-hold" value="${st.avgHold}" placeholder="18 hrs"></div>
+    </div>
+    <div class="form-group"><label>Best trade (30d)</label><input id="st-best" value="${st.bestTrade}" placeholder="+38.4% SOL"></div>
+    <div style="margin-top:8px"><button class="btn-primary" onclick="saveStats2()">Save stats</button></div>`;
+}
+function saveStats2() {
+  const st = {
+    winRate: document.getElementById('st-wr').value,
+    members: document.getElementById('st-members').value,
+    total: parseInt(document.getElementById('st-total').value)||0,
+    wins: parseInt(document.getElementById('st-wins').value)||0,
+    losses: parseInt(document.getElementById('st-losses').value)||0,
+    avgHold: document.getElementById('st-hold').value,
+    bestTrade: document.getElementById('st-best').value,
+  };
+  saveStats(st);
+  showToast('Stats updated — live site will reflect changes');
+}
+
+// ── CLOSE MODALS ON BACKDROP CLICK ───────────────────────────────────────
+['sig-modal','trade-modal','art-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){
+    if(e.target===this){
+      this.classList.remove('open');
+    }
+  });
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+buildDashboard();
+</script>
+</body>
+</html>
